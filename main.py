@@ -13,7 +13,7 @@ def splitDocument(doc):
     loader = PyPDFLoader(doc)
 
     data = loader.load()
-    print (f'There are {len(data)} document(s), each with {len(data[5].page_content)} characters...')
+    print (f'There are {len(data)} document(s), each with {len(data[-1].page_content)} characters...')
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=0)
     texts = text_splitter.split_documents(data) # Split again bc you're using PyPDFLoader (optional)
@@ -25,13 +25,13 @@ from langchain.vectorstores import Chroma, Pinecone
 from langchain.embeddings.openai import OpenAIEmbeddings
 import pinecone
 
-def uploadEmbeddings(texts):
+def uploadEmbeddings(texts, retrain=False):
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', 'YourAPIKey')
 
     PINECONE_API_KEY = os.environ.get('PINECONE_API_KEY', 'YourAPIKey')
     PINECONE_API_ENV = os.environ.get('PINECONE_API_ENV', 'YourAPIEnv')
 
-    # Create embeddings
+    # Create embeddings, model="text-embedding-ada-002" (default)
     embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 
     pinecone.init(
@@ -40,8 +40,12 @@ def uploadEmbeddings(texts):
     )
     index_name = "chatterup-index" # the name of your pinecone index
 
-    # Upload to vector store
-    docsearch = Pinecone.from_texts([t.page_content for t in texts], embeddings, index_name=index_name)
+    # Upload to vector store or query existing
+    if retrain:
+        docsearch = Pinecone.from_texts([t.page_content for t in texts], embeddings, index_name=index_name)
+    else:
+        docsearch = Pinecone.from_existing_index(embedding=embeddings, index_name=index_name)
+
     return docsearch
 
 
@@ -51,7 +55,7 @@ from langchain.chains.question_answering import load_qa_chain
 def queryChatGPT(query, docsearch):
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', 'YourAPIKey')
 
-    llm = OpenAI(temperature=0, openai_api_key=OPENAI_API_KEY)
+    llm = OpenAI(temperature=0, openai_api_key=OPENAI_API_KEY) # default is $0.02 per 1k tokens
     chain = load_qa_chain(llm, chain_type="stuff")
 
     docs = docsearch.similarity_search(query)
@@ -62,10 +66,10 @@ def queryChatGPT(query, docsearch):
 
 def main():
     file = "./principles_abridged.pdf"
-    query = "Why did ray dalio write this book?"
+    query = "What is ray dalio's main argument and his reasoning for it?"
 
     texts = splitDocument(file)
-    docsearch = uploadEmbeddings(texts)
+    docsearch = uploadEmbeddings(texts, retrain=False) # True if pinecone deletes your stuff
     answer = queryChatGPT(query, docsearch)
 
     print("Question: ", query)
