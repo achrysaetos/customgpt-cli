@@ -1,6 +1,7 @@
-## chatterup-test
+## customgpt-cli
 
-Custom ChatGPT for your website.
+Simple CLI for querying pdf's - langchain, pinecone, openai. Full script in `main.py`.
 
-Video: https://www.youtube.com/watch?v=h0DHDp1FbmQ \
-Code: https://github.com/gkamradt/langchain-tutorials/blob/main/data_generation/Ask%20A%20Book%20Questions.ipynb
+1. Create a `.env` file from `.env.example`
+2. Initialize your virtual environment and install requirements from `requirements.txt`
+3. Run `main.py`

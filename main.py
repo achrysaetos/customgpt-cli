@@ -15,7 +15,7 @@ def splitDocument(doc):
     data = loader.load()
     print (f'There are {len(data)} document(s), each with {len(data[-1].page_content)} characters...')
 
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=0)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=0) # Play around w these params
     texts = text_splitter.split_documents(data) # Split again bc you're using PyPDFLoader (optional)
 
     return texts
